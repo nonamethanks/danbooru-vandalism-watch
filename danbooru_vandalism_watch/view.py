@@ -9,16 +9,24 @@ class Styles:
     revert = discord.ButtonStyle.grey
 
 
+class Labels:
+    handled = "Mark handled"
+    not_handled = "Undo mark handled"
+
+    false_positive = "Mark false positive"
+    not_false_positive = "Undo false positive"
+
+
 class PersistentView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Mark handled", style=Styles.active, custom_id="persistent_view:green")
+    @discord.ui.button(label=Labels.handled, style=Styles.active, custom_id="persistent_view:green")
     async def green(self, interaction: discord.Interaction, button: discord.ui.Button):
         embed = interaction.message.embeds[0]  # type: ignore[union-attr, misc]
 
-        original_label = "Mark handled"
-        undo_label = "Undo mark handled"
+        original_label = Labels.handled
+        undo_label = Labels.not_handled
         clicked = original_label if button.label == original_label else undo_label
         is_revert = True if button.label != original_label else False
 
@@ -37,12 +45,12 @@ class PersistentView(discord.ui.View):
         self.fix_buttons(button, original_label, undo_label)
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @discord.ui.button(label="Mark false positive", style=Styles.active, custom_id="persistent_view:grey")
+    @discord.ui.button(label=Labels.false_positive, style=Styles.active, custom_id="persistent_view:grey")
     async def grey(self, interaction: discord.Interaction, button: discord.ui.Button):
         embed = interaction.message.embeds[0]  # type: ignore[union-attr, misc]
 
-        original_label = "Mark false positive"
-        undo_label = "Undo false positive"
+        original_label = Labels.false_positive
+        undo_label = Labels.not_false_positive
 
         clicked = original_label if button.label == original_label else undo_label
         is_revert = True if button.label != original_label else False
