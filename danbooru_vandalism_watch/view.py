@@ -23,17 +23,18 @@ class PersistentView(discord.ui.View):
 
     @discord.ui.button(label=Labels.handled, style=Styles.active, custom_id="persistent_view:green")
     async def green(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not self.can_click_button(interaction.user):  # type: ignore[arg-type]
+            await interaction.response.send_message("Only builders and above can do this. Gomen...", ephemeral=True)
+            self.log_click(interaction, button, False)
+            return
+
+        self.log_click(interaction, button, True)
+
         embed = interaction.message.embeds[0]  # type: ignore[union-attr, misc]
 
         original_label = Labels.handled
         undo_label = Labels.not_handled
-        clicked = original_label if button.label == original_label else undo_label
         is_revert = True if button.label != original_label else False
-
-        logger.info(
-            f"Discord user #{interaction.user.name} ({interaction.user.display_name}) "
-            f"clicked '{clicked}' for {interaction.message.jump_url}"  # type: ignore[union-attr]
-        )
 
         embed = self.edit_embed(
             embed,
@@ -47,18 +48,19 @@ class PersistentView(discord.ui.View):
 
     @discord.ui.button(label=Labels.false_positive, style=Styles.active, custom_id="persistent_view:grey")
     async def grey(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not self.can_click_button(interaction.user):  # type: ignore[arg-type]
+            await interaction.response.send_message("Only builders and above can do this. Gomen...", ephemeral=True)
+            self.log_click(interaction, button, False)
+            return
+
+        self.log_click(interaction, button, True)
+
         embed = interaction.message.embeds[0]  # type: ignore[union-attr, misc]
 
         original_label = Labels.false_positive
         undo_label = Labels.not_false_positive
 
-        clicked = original_label if button.label == original_label else undo_label
         is_revert = True if button.label != original_label else False
-
-        logger.info(
-            f"Discord user #{interaction.user.name} ({interaction.user.display_name}) "
-            f"clicked '{clicked}' for {interaction.message.jump_url}"  # type: ignore[union-attr]
-        )
 
         embed = self.edit_embed(
             embed,
@@ -107,6 +109,9 @@ class PersistentView(discord.ui.View):
             if field["name"] == "Last handled by":
                 continue
 
+            if field["name"] == "\u200b":
+                continue
+
             if is_revert:
                 field["name"] = field["name"].strip("~")
                 field["value"] = field["value"].strip("~")
@@ -122,3 +127,21 @@ class PersistentView(discord.ui.View):
             embed_dict["fields"].append(editor_field)
         else:
             editor_field["value"] = f"<@{last_editor.id}>"
+
+    def can_click_button(self, user: discord.Member) -> bool:
+        user_roles = {r.name.lower() for r in user.roles}
+        acceptable_roles = {"builder", "mod", "admin"}
+        return bool(user_roles & acceptable_roles)
+
+    def log_click(self, interaction: discord.Interaction, button: discord.ui.Button, success: bool) -> None:
+        assert interaction.message
+        if success:
+            logger.info(
+                f"Discord user #{interaction.user.name} ({interaction.user.display_name}) "
+                f"successfully clicked '{button.label}' on {interaction.message.jump_url}"
+            )
+        else:
+            logger.info(
+                f"Discord user #{interaction.user.name} ({interaction.user.display_name}) "
+                f"tried to click '{button.label}' on {interaction.message.jump_url} but didn't have the right roles."
+            )

@@ -56,6 +56,7 @@ class VandalismChecker(commands.Cog):
         new_post_versions = danbooru_api.post_versions(
             id=f">{self.last_checked_post_version}",
             updater_id_not=",".join(BOT_IDS),
+            is_new=False,
             limit=1000,
         )
 
@@ -65,7 +66,9 @@ class VandalismChecker(commands.Cog):
 
         detected_by_user = defaultdict(list)
         for post_version in new_post_versions:
+            self.bot.logger.info(f"Checking post version {post_version.url}")
             if self.is_tag_vandalism(post_version):
+                self.bot.logger.info(f"<r>Post version {post_version.url} was detected as vandalism. Sending...</r>")
                 detected_by_user[post_version.updater].append(post_version)
 
         for edits in detected_by_user.values():
@@ -74,7 +77,6 @@ class VandalismChecker(commands.Cog):
         self.last_checked_post_version = max(new_post_versions, key=lambda x: x.id).id
 
     def is_tag_vandalism(self, post_version: DanbooruPostVersion) -> bool:
-        self.bot.logger.info(f"Checking post version {post_version.url}")
         if self.test_mode:
             return True
 
@@ -89,9 +91,11 @@ class VandalismChecker(commands.Cog):
             title="Tag Vandalism",
             color=Color.red(),
         )
-        embed.add_field(name="Type", value="Mass Tag Removal", inline=False)
-        embed.add_field(name="Posts", value=f"[{len(post_versions)} posts]({edits_url})", inline=False)
-        embed.add_field(name="User", value=f"[{user.name}]({user.url})", inline=True)
+        embed.add_field(name="Type", value="Mass Tag Removal", inline=True)
+        embed.add_field(name="Posts", value=f"[{len(post_versions)} posts]({edits_url})", inline=True)
+        embed.add_field(name="\u200b", value="\u200b")
+        embed.add_field(name="Username", value=f"[{user.name}]({user.url})", inline=True)
+        embed.add_field(name="ID", value=f"#{user.id}", inline=True)
         embed.add_field(name="Role", value=f"{user.level_string}", inline=True)
         embed.timestamp = datetime.datetime.now(datetime.UTC)
         embed.set_footer(text="\u200b")
