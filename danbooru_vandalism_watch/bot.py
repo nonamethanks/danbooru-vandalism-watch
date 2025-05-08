@@ -26,12 +26,24 @@ class NNTBot(commands.Bot):
     async def load_cogs(self) -> None:
         await self.load_extension("danbooru_vandalism_watch.vandalism_checker")
 
-    @tasks.loop(minutes=1.0)
+    @tasks.loop(seconds=30)
     async def status_task(self) -> None:
         statuses = [
-            "Jorking it to guro",
-            "Killing nonamethanks",
-            "Beating my metal meat",
+            "Browsing guro...",
+            "Watching... Plotting...",
+            "Killing nonamethanks...",
+            "Beating my metal meat...",
+            "Practicing chikan...",
+            "Having a builder meltdown™...",
+            "I have no nose and I must sniff...",
+            "Approving random BURs...",
+            "Opening a Fate thread...",
+            "Opening a Bridget thread...",
+            "Uploading simpsons porn...",
+            "alias luigi -> luigi_mario",
+            "Arguing in bad faith...",
+            "Stalking Fumimi...",
+            "Returning to Hyperborea...",
         ]
         await self.change_presence(activity=discord.CustomActivity(name=random.choice(statuses)))
 
@@ -59,4 +71,4 @@ class NNTBot(commands.Bot):
         return channel
 
     async def on_ready(self) -> None:
-        await self.channel.send("NNTBot is ready and online.")  # type: ignore[union-attr]
+        logger.info("Bot is ready and online.")
