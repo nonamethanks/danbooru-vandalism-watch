@@ -1,0 +1,12 @@
+name: bots
+services:
+  vandalism-bot:
+    container_name: vandalism-bot
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - ./danbooru_vandalism_watch:/code/danbooru_vandalism_watch:ro
+      - ./run_bot.py:/code/run_bot.py:ro
+      - ./logs:/code/logs
+    restart: unless-stopped
