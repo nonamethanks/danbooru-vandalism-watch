@@ -53,7 +53,7 @@ class NNTBot(commands.Bot):
 
     async def setup_hook(self) -> None:
         self.logger.info(f"Logged in as {self.user.name}")  # type: ignore[union-attr]
-        self.logger.info(f"Target channel: {self.channel_id}")  # type: ignore[union-attr]
+        self.logger.info(f"Target channel: {self.channel_id}")
         self.logger.info(f"discord.py API version: {discord.__version__}")
         self.logger.info(f"Python version: {platform.python_version()}")
         self.logger.info(f"Running on: {platform.system()} {platform.release()} ({os.name})")
@@ -66,7 +66,7 @@ class NNTBot(commands.Bot):
 
     @property
     def channel(self) -> discord.TextChannel:
-        channel = self.get_channel(self.channel_id)  # type: ignore[misc]
+        channel = self.get_channel(self.channel_id)
         assert isinstance(channel, discord.TextChannel)
         return channel
 

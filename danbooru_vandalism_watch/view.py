@@ -42,6 +42,7 @@ class PersistentView(discord.ui.View):
             interaction.user,  # type: ignore[arg-type]  # I FUCKING HATE MYPY I FUCKING HATE MYPY
             default_color=Color.green(),
         )
+        embed.title = "Tag Vandalism" if is_revert else "Tag Vandalism (Handled)"
 
         self.fix_buttons(button, original_label, undo_label)
         await interaction.response.edit_message(embed=embed, view=self)
@@ -68,6 +69,8 @@ class PersistentView(discord.ui.View):
             interaction.user,  # type: ignore[arg-type]  # I FUCKING HATE MYPY I FUCKING HATE MYPY
             default_color=Color.dark_grey(),
         )
+        embed.title = "Tag Vandalism" if is_revert else "Tag Vandalism (False Positive)"
+
         self.fix_buttons(button, original_label, undo_label)
         await interaction.response.edit_message(embed=embed, view=self)
 
@@ -81,7 +84,6 @@ class PersistentView(discord.ui.View):
         ####################################################################################
 
         embed.colour = Color.red() if is_revert else default_color
-
         embed_dict = embed.to_dict()
         self.toggle_field_strike(embed_dict, is_revert=is_revert)
         self.set_last_editors(embed_dict, editor)

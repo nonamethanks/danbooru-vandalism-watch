@@ -80,6 +80,9 @@ class VandalismChecker(commands.Cog):
         if self.test_mode:
             return True
 
+        if len(post_version.removed_tags) < 5:
+            return False
+
         return len(post_version.removed_tags) >= len(post_version.post.tags)  # half the tags were removed
 
     async def send_tag_vandalism_mass_tag_removal(self, *post_versions: DanbooruPostVersion) -> None:
