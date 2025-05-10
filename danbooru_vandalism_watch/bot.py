@@ -1,11 +1,10 @@
-import discord
-from discord.ext import commands, tasks
 import os
+import platform
 import random
 
-import platform
-
+import discord
 from danboorutools import logger  # type: ignore[import-untyped]
+from discord.ext import commands, tasks
 
 from danbooru_vandalism_watch.view import PersistentView
 

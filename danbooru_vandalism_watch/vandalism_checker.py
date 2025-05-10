@@ -1,17 +1,22 @@
 from __future__ import annotations
 
+import asyncio
 import datetime
+import os
 import time
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
-from danboorutools.logical.sessions.danbooru import danbooru_api
-from danboorutools.models.danbooru import DanbooruPostVersion, DanbooruUser
+from danboorutools.logical.sessions.danbooru import danbooru_api, kwargs_to_include
+from danboorutools.models.danbooru import DanbooruUser  # noqa: TC002
+from danboorutools.util.misc import BaseModel
 from discord import Color, Embed
 from discord.ext import commands, tasks
-import os
 
 from danbooru_vandalism_watch.view import PersistentView
+
+if TYPE_CHECKING:
+    from danboorutools.models.danbooru import DanbooruPostVersion
 
 if TYPE_CHECKING:
     from danbooru_vandalism_watch.bot import NNTBot
@@ -29,6 +34,27 @@ def user_embed(user: DanbooruUser) -> str:
 TEST_MODE = os.environ.get("TEST_MODE", "FALSE").lower() in ["true", "1"]
 
 
+class ArtistData(BaseModel):
+    id: int
+    name: str
+
+    @property
+    def url(self) -> str:
+        return f"https://danbooru.donmai.us/artists/{self.id}"
+
+
+class ArtistVersionData(BaseModel):
+    id: int
+    updater: DanbooruUser
+    urls: list[str]
+
+    artist: ArtistData
+
+    @property
+    def edits_url(self) -> str:
+        return f"https://danbooru.donmai.us/artist_versions?search[artist_id]={self.artist.id}"
+
+
 class VandalismChecker(commands.Cog):
     def __init__(self, bot: NNTBot):
         self.index = 0
@@ -40,15 +66,30 @@ class VandalismChecker(commands.Cog):
             self.bot.logger.info("<r>Running in test mode. Everything will be marked as vandalism.</r>")
 
         self.last_checked_post_version = danbooru_api.post_versions(limit=1)[0].id
+        self.last_checked_artist_version = self._get_artist_versions(limit=1)[0].id
+
+    @staticmethod
+    def _get_artist_versions(**kwargs) -> list[ArtistVersionData]:
+        data = danbooru_api.danbooru_request(
+            "GET",
+            "artist_versions.json",
+            params=kwargs_to_include(**kwargs, only="id,updater,artist,urls"),
+        )
+        return [ArtistVersionData(**a) for a in data]
 
     @tasks.loop(seconds=5 if TEST_MODE else 60, count=None)
-    async def main_loop(self):
-        self.bot.logger.info("Scanning for tag vandalism...")
-        await self.check_for_tag_vandalism()
-        self.bot.logger.info("Done!")
+    async def main_loop(self) -> None:
+        try:
+            self.bot.logger.info("Scanning for tag vandalism...")
+            await self.check_for_tag_vandalism()
+            self.bot.logger.info("Scanning for artist vandalism...")
+            await self.check_for_artist_vandalism()
+            self.bot.logger.info("Done!")
+        except Exception:
+            self.bot.logger.exception("Encountered an exception.")
 
     @main_loop.before_loop
-    async def wait_for_boot(self):
+    async def wait_for_boot(self) -> None:
         self.bot.logger.info("Starting up...")
         await self.bot.wait_until_ready()
 
@@ -75,6 +116,26 @@ class VandalismChecker(commands.Cog):
             await self.send_tag_vandalism_mass_tag_removal(*edits)
 
         self.last_checked_post_version = max(new_post_versions, key=lambda x: x.id).id
+
+    async def check_for_artist_vandalism(self) -> None:
+        new_artist_versions = self._get_artist_versions(
+            id=f">{self.last_checked_artist_version}",
+            updater_id_not=",".join(BOT_IDS),
+            limit=1000,
+        )
+
+        if not new_artist_versions:
+            self.bot.logger.info("No new artist edits found.")
+            return
+
+        new_artist_versions.sort(key=lambda a: a.id)
+
+        for artist_version in new_artist_versions:
+            self.bot.logger.info(f"Checking artist version for artist {artist_version.artist.url}")
+            if self.is_artist_vandalism(artist_version):
+                self.bot.logger.info(f"<r>Artist version for artist {artist_version.artist.url} was detected as vandalism. Sending...</r>")
+                await self.send_artist_vandalism_url_nuke(artist_version)
+            self.last_checked_artist_version = artist_version.id
 
     def is_tag_vandalism(self, post_version: DanbooruPostVersion) -> bool:
         if self.test_mode:
@@ -105,7 +166,30 @@ class VandalismChecker(commands.Cog):
 
         await self.bot.channel.send(embed=embed, view=PersistentView())
 
-        time.sleep(1)
+    def is_artist_vandalism(self, artist_version: ArtistVersionData) -> bool:
+        if self.test_mode:
+            return True
+
+        return len(artist_version.urls) == 0
+
+    async def send_artist_vandalism_url_nuke(self, artist_version: ArtistVersionData) -> None:
+        user = artist_version.updater
+        self.bot.logger.info(f"<r>Sending vandalism for artist {artist_version.urls}</r>")
+
+        embed = Embed(
+            title="Artist Vandalism",
+            color=Color.red(),
+        )
+        embed.add_field(name="Type", value="Mass Artist Url Removal", inline=True)
+        embed.add_field(name="Artist", value=f"[{artist_version.artist.name}]({artist_version.edits_url})", inline=True)
+        embed.add_field(name="\u200b", value="\u200b")
+        embed.add_field(name="Username", value=f"[{user.name}]({user.url})", inline=True)
+        embed.add_field(name="ID", value=f"#{user.id}", inline=True)
+        embed.add_field(name="Role", value=f"{user.level_string}", inline=True)
+        embed.timestamp = datetime.datetime.now(datetime.UTC)
+        embed.set_footer(text="\u200b")
+
+        await self.bot.channel.send(embed=embed, view=PersistentView())
 
 
 async def setup(bot: NNTBot) -> None:
