@@ -71,3 +71,7 @@ class NNTBot(commands.Bot):
 
     async def on_ready(self) -> None:
         logger.info("Bot is ready and online.")
+
+    async def alert_owner(self) -> None:
+        assert self.application
+        await self.application.owner.send("Yo, the bot crapped out. Check the logs.")

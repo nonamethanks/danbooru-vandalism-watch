@@ -86,7 +86,8 @@ class VandalismChecker(commands.Cog):
             await self.check_for_artist_vandalism()
             self.bot.logger.info("Done!")
         except Exception:
-            self.bot.logger.exception("Encountered an exception.")
+            self.bot.logger.exception("Encountered an exception. Sending to owner...")
+            await self.bot.alert_owner()
 
     @main_loop.before_loop
     async def wait_for_boot(self) -> None:
