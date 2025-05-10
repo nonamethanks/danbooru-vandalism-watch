@@ -39,6 +39,7 @@ class ArtistData(BaseModel):
 class ArtistVersionData(BaseModel):
     id: int
     updater: DanbooruUser
+    created_at: datetime.datetime
     updated_at: datetime.datetime
     urls: list[str]
 
@@ -63,7 +64,7 @@ class VandalismChecker(commands.Cog):
         data = danbooru_api.danbooru_request(
             "GET",
             "artist_versions.json",
-            params=kwargs_to_include(**kwargs, only="id,updater,artist,urls,updated_at"),
+            params=kwargs_to_include(**kwargs, only="id,updater,artist,urls,updated_at,created_at"),
         )
         return [ArtistVersionData(**a) for a in data]
 
@@ -162,6 +163,15 @@ class VandalismChecker(commands.Cog):
         if NNTBot.test_mode:
             return True
 
+        elapsed_since_creation = artist_version.updated_at - artist_version.created_at
+        if elapsed_since_creation > datetime.timedelta(hours=1):
+            # just someone creating an artist wiki and then adding the urls after
+            return False
+
+        if artist_version.updater.level > 30:
+            # assume builders are not vandals (big assumption lmao)
+            return False
+
         return len(artist_version.urls) == 0
 
     async def send_artist_vandalism_url_nuke(self, artist_version: ArtistVersionData) -> None:
@@ -172,7 +182,7 @@ class VandalismChecker(commands.Cog):
             title="Artist Vandalism",
             color=Color.red(),
         )
-        embed.add_field(name="Type", value="Mass Artist Url Removal", inline=True)
+        embed.add_field(name="Type", value="Mass Url Removal", inline=True)
         embed.add_field(name="Artist", value=f"[{artist_version.artist.name}]({artist_version.edits_url})", inline=True)
         embed.add_field(name="\u200b", value="\u200b")
         embed.add_field(name="Username", value=f"[{user.name}]({user.url})", inline=True)
