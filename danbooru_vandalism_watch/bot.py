@@ -12,6 +12,8 @@ intents = discord.Intents.all()
 
 
 class NNTBot(commands.Bot):
+    test_mode = os.environ.get("NNTBOT_DISCORD_TEST_MODE", "FALSE").lower() in ["true", "1"]
+
     def __init__(self) -> None:
         super().__init__(
             command_prefix=commands.when_mentioned_or("$"),
@@ -21,6 +23,7 @@ class NNTBot(commands.Bot):
 
         self.logger = logger
         self.channel_id = int(os.environ["NTTBOT_DISCORD_CHANNEL_ID"])
+        self.test_channel_id = int(os.environ["NTTBOT_DISCORD_TEST_CHANNEL_ID"])
 
     async def load_cogs(self) -> None:
         await self.load_extension("danbooru_vandalism_watch.vandalism_checker")
@@ -56,6 +59,10 @@ class NNTBot(commands.Bot):
         self.logger.info(f"discord.py API version: {discord.__version__}")
         self.logger.info(f"Python version: {platform.python_version()}")
         self.logger.info(f"Running on: {platform.system()} {platform.release()} ({os.name})")
+        if self.test_mode:
+            self.logger.info("<r>Running in test mode. Everything will be marked as vandalism.</r>")
+        else:
+            self.logger.info("<g>Running in prod mode.</g>")
         self.logger.info("-------------------")
         await self.load_cogs()
 
@@ -65,7 +72,8 @@ class NNTBot(commands.Bot):
 
     @property
     def channel(self) -> discord.TextChannel:
-        channel = self.get_channel(self.channel_id)
+        channel_id = self.test_channel_id if self.test_mode else self.channel_id
+        channel = self.get_channel(channel_id)
         assert isinstance(channel, discord.TextChannel)
         return channel
 
