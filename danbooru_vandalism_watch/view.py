@@ -22,7 +22,7 @@ class PersistentView(discord.ui.View):
         super().__init__(timeout=None)
 
     @discord.ui.button(label=Labels.handled, style=Styles.active, custom_id="persistent_view:green")
-    async def green(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def green(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         if not self.can_click_button(interaction.user):  # type: ignore[arg-type]
             await interaction.response.send_message("Only builders and above can do this. Gomen...", ephemeral=True)
             self.log_click(interaction, button, False)
@@ -30,11 +30,11 @@ class PersistentView(discord.ui.View):
 
         self.log_click(interaction, button, True)
 
-        embed = interaction.message.embeds[0]  # type: ignore[union-attr, misc]
+        embed = interaction.message.embeds[0]  # type: ignore[union-attr]
 
         original_label = Labels.handled
         undo_label = Labels.not_handled
-        is_revert = True if button.label != original_label else False
+        is_revert = button.label != original_label
 
         embed = self.edit_embed(
             embed,
@@ -48,7 +48,7 @@ class PersistentView(discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=self)
 
     @discord.ui.button(label=Labels.false_positive, style=Styles.active, custom_id="persistent_view:grey")
-    async def grey(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def grey(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         if not self.can_click_button(interaction.user):  # type: ignore[arg-type]
             await interaction.response.send_message("Only builders and above can do this. Gomen...", ephemeral=True)
             self.log_click(interaction, button, False)
@@ -61,7 +61,7 @@ class PersistentView(discord.ui.View):
         original_label = Labels.false_positive
         undo_label = Labels.not_false_positive
 
-        is_revert = True if button.label != original_label else False
+        is_revert = button.label != original_label
 
         embed = self.edit_embed(
             embed,
@@ -91,7 +91,7 @@ class PersistentView(discord.ui.View):
 
         return embed
 
-    def fix_buttons(self, button: discord.ui.Button, original_label: str, undo_label: str):
+    def fix_buttons(self, button: discord.ui.Button, original_label: str, undo_label: str) -> None:
         if button.label == original_label:
             button.label = undo_label
             for child in self.children:
