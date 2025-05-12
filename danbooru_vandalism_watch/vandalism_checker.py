@@ -164,7 +164,7 @@ class VandalismChecker(commands.Cog):
             return True
 
         elapsed_since_creation = artist_version.updated_at - artist_version.created_at
-        if elapsed_since_creation > datetime.timedelta(hours=1):
+        if elapsed_since_creation < datetime.timedelta(hours=1):
             # just someone creating an artist wiki and then adding the urls after
             return False
 
