@@ -131,10 +131,11 @@ class VandalismChecker(commands.Cog):
             self.last_checked_artist_version = artist_version.id
 
     def is_tag_vandalism(self, post_version: DanbooruPostVersion) -> bool:
-        if NNTBot.test_mode:
-            return True
-
         if len(post_version.removed_tags) < 5:
+            return False
+
+        if post_version.post.is_deleted and "off-topic" in post_version.post.tags:
+            # no point in reporting these
             return False
 
         return len(post_version.removed_tags) >= len(post_version.post.tags)  # half the tags were removed
@@ -161,19 +162,23 @@ class VandalismChecker(commands.Cog):
         await self.bot.channel.send(embed=embed, view=PersistentView())
 
     def is_artist_vandalism(self, artist_version: ArtistVersionData) -> bool:
-        if NNTBot.test_mode:
-            return True
-
         elapsed_since_creation = artist_version.updated_at - artist_version.artist.created_at
         if elapsed_since_creation < datetime.timedelta(hours=1):
             # just someone creating an artist wiki and then adding the urls after
+            self.bot.logger.trace("This seems to be a new version. Skipping.")
             return False
 
         if artist_version.updater.level > 30:
             # assume builders are not vandals (big assumption lmao)
+            self.bot.logger.trace("Was done by a builder or above. Skipping.")
             return False
 
-        return len(artist_version.urls) == 0
+        previous_versions = self._get_artist_versions(artist_id=artist_version.artist.id, id=f"<{artist_version.id}")
+        if not previous_versions:
+            self.bot.logger.trace("This was a new version. Skipping.")
+            return False
+
+        return bool(not artist_version.urls and previous_versions[0].urls)
 
     async def send_artist_vandalism_url_nuke(self, artist_version: ArtistVersionData) -> None:
         user = artist_version.updater
