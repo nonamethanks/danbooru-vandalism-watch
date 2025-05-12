@@ -69,7 +69,7 @@ class VandalismChecker(commands.Cog):
         )
         return [ArtistVersionData(**a) for a in data]
 
-    @tasks.loop(seconds=5 if NNTBot.test_mode else 60, count=None)
+    @tasks.loop(seconds=10 if NNTBot.test_mode else 60, count=None)
     async def main_loop(self) -> None:
         try:
             self.bot.logger.info("Scanning for tag vandalism...")
@@ -98,15 +98,18 @@ class VandalismChecker(commands.Cog):
             self.bot.logger.info("No new post edits found.")
             return
 
-        detected_by_user = defaultdict(list)
+        detected_by_user: dict[str, dict[DanbooruUser, list[DanbooruPostVersion]]] = defaultdict(lambda: defaultdict(list))
         for post_version in new_post_versions:
             self.bot.logger.info(f"Checking post version {post_version.url}")
-            if self.is_tag_vandalism(post_version):
-                self.bot.logger.info(f"<r>Post version {post_version.url} was detected as vandalism. Sending...</r>")
-                detected_by_user[post_version.updater].append(post_version)
+            if (tag_vandalism_type := self.is_tag_vandalism(post_version)) is not None:
+                self.bot.logger.info(
+                    f"<r>Post version {post_version.url} was detected as vandalism of type '{tag_vandalism_type}'. Sending...</r>",
+                )
+                detected_by_user[tag_vandalism_type][post_version.updater].append(post_version)
 
-        for edits in detected_by_user.values():
-            await self.send_tag_vandalism_mass_tag_removal(*edits)
+        for vandalism_type, edits_by_user in detected_by_user.items():
+            for edits in edits_by_user.values():
+                await self.send_tag_vandalism(vandalism_type=vandalism_type, post_versions=list(edits))
 
         self.last_checked_post_version = max(new_post_versions, key=lambda x: x.id).id
 
@@ -130,27 +133,41 @@ class VandalismChecker(commands.Cog):
                 await self.send_artist_vandalism_url_nuke(artist_version)
             self.last_checked_artist_version = artist_version.id
 
-    def is_tag_vandalism(self, post_version: DanbooruPostVersion) -> bool:
-        if len(post_version.removed_tags) < 5:
-            return False
-
+    def is_tag_vandalism(self, post_version: DanbooruPostVersion) -> str | None:
         if post_version.post.is_deleted and "off-topic" in post_version.post.tags:
+            self.bot.logger.trace("The post was off-topic and deleted. Ignoring.")
             # no point in reporting these
-            return False
+            return None
 
-        return len(post_version.removed_tags) >= len(post_version.post.tags)  # half the tags were removed
+        if len(post_version.removed_tags) >= 5 and len(post_version.removed_tags) >= len(post_version.post.tags):
+            # half the tags were removed
+            self.bot.logger.trace("Found mass tag removal.")
+            return "Mass Tag Removal"
 
-    async def send_tag_vandalism_mass_tag_removal(self, *post_versions: DanbooruPostVersion) -> None:
+        if len(post_version.added_tags) >= 200:
+            # tag spam
+            self.bot.logger.trace("Found mass tag addition.")
+            return "Mass Tag Addition"
+
+        self.bot.logger.trace("No vandalism here.")
+        return None
+
+    async def send_tag_vandalism(self, vandalism_type: str, post_versions: list[DanbooruPostVersion]) -> None:
         user = post_versions[0].updater
         self.bot.logger.info(f"<r>Sending vandalism for user #{user.url}</r>")
 
-        edits_url = "https://danbooru.donmai.us/post_versions?search[id]=" + ",".join(map(str, [p.id for p in post_versions]))
+        if len(post_versions) < 100:
+            edits_url = "https://danbooru.donmai.us/post_versions?search[id]=" + ",".join(map(str, [p.id for p in post_versions]))
+            edits_link = f"[{len(post_versions)} posts]({edits_url})"
+        else:
+            edits_link = f"[{len(post_versions)} posts](https://danbooru.donmai.us/post_versions?search[updater_id]={user.id})"
+
         embed = Embed(
             title="Tag Vandalism",
             color=Color.red(),
         )
-        embed.add_field(name="Type", value="Mass Tag Removal", inline=True)
-        embed.add_field(name="Posts", value=f"[{len(post_versions)} posts]({edits_url})", inline=True)
+        embed.add_field(name="Type", value=vandalism_type, inline=True)
+        embed.add_field(name="Posts", value=edits_link, inline=True)
         embed.add_field(name="\u200b", value="\u200b")
         embed.add_field(name="Username", value=f"[{user.name}]({user.url})", inline=True)
         embed.add_field(name="ID", value=f"#{user.id}", inline=True)
