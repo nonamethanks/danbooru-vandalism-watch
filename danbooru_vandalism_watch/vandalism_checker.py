@@ -30,6 +30,7 @@ def user_embed(user: DanbooruUser) -> str:
 class ArtistData(BaseModel):
     id: int
     name: str
+    created_at: datetime.datetime
 
     @property
     def url(self) -> str:
@@ -163,7 +164,7 @@ class VandalismChecker(commands.Cog):
         if NNTBot.test_mode:
             return True
 
-        elapsed_since_creation = artist_version.updated_at - artist_version.created_at
+        elapsed_since_creation = artist_version.updated_at - artist_version.artist.created_at
         if elapsed_since_creation < datetime.timedelta(hours=1):
             # just someone creating an artist wiki and then adding the urls after
             return False
