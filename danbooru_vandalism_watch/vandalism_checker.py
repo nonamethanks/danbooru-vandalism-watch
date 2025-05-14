@@ -134,8 +134,8 @@ class VandalismChecker(commands.Cog):
             self.last_checked_artist_version = artist_version.id
 
     def is_tag_vandalism(self, post_version: DanbooruPostVersion) -> str | None:
-        if post_version.post.is_deleted and "off-topic" in post_version.post.tags:
-            self.bot.logger.trace("The post was off-topic and deleted. Ignoring.")
+        if post_version.post.is_deleted:
+            self.bot.logger.trace("The post was deleted. Ignoring.")
             # no point in reporting these
             return None
 
