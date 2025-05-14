@@ -139,9 +139,16 @@ class VandalismChecker(commands.Cog):
             # no point in reporting these
             return None
 
-        if len(post_version.removed_tags) >= 5 and len(post_version.removed_tags) >= len(post_version.post.tags):
-            # half the tags were removed
-            self.bot.logger.trace("Found mass tag removal.")
+        if post_version.updater.level > 30:
+            # assume builders are not vandals (big assumption lmao)
+            self.bot.logger.trace("Was done by a builder or above. Skipping.")
+
+        if len(post_version.removed_tags) >= 5 and len(post_version.post.tags) < 5:
+            # most tags removed
+            self.bot.logger.trace(
+                f"Found mass tag removal. The post had {len(post_version.removed_tags)} tags removed,"
+                f" {len(post_version.post.tags)} tags in the end",
+            )
             return "Mass Tag Removal"
 
         if len(post_version.added_tags) >= 200:
