@@ -1,7 +1,7 @@
 import discord
+from danboorutools import logger
 from discord import Color
 from discord.types.embed import Embed
-from danboorutools import logger
 
 
 class Styles:
@@ -142,10 +142,10 @@ class PersistentView(discord.ui.View):
         if success:
             logger.info(
                 f"Discord user #{interaction.user.name} ({interaction.user.display_name}) "
-                f"successfully clicked '{button.label}' on {interaction.message.jump_url}"
+                f"successfully clicked '{button.label}' on {interaction.message.jump_url}",
             )
         else:
             logger.info(
                 f"Discord user #{interaction.user.name} ({interaction.user.display_name}) "
-                f"tried to click '{button.label}' on {interaction.message.jump_url} but didn't have the right roles."
+                f"tried to click '{button.label}' on {interaction.message.jump_url} but didn't have the right roles.",
             )
