@@ -70,7 +70,7 @@ class VandalismChecker(commands.Cog):
         )
         return [ArtistVersionData(**a) for a in data]
 
-    @tasks.loop(seconds=10 if NNTBot.test_mode else 30, count=None)
+    @tasks.loop(seconds=10 if NNTBot.test_mode else 60, count=None)
     async def main_loop(self) -> None:
         try:
             self.bot.logger.info("Scanning for tag vandalism...")
