@@ -4,7 +4,7 @@ import datetime
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
-from danboorutools.exceptions import DanbooruHTTPError
+from danboorutools.exceptions import HTTPError
 from danboorutools.logical.sessions.danbooru import danbooru_api, kwargs_to_include
 from danboorutools.models.danbooru import DanbooruUser  # noqa: TC002
 from danboorutools.util.misc import BaseModel
@@ -81,7 +81,7 @@ class VandalismChecker(commands.Cog):
         except Exception:
             self.bot.logger.exception("Encountered an exception. Sending to owner...")
             await self.bot.alert_owner()
-        except DanbooruHTTPError:
+        except HTTPError:
             self.bot.logger.exception("Encountered an exception with danbooru. Trying again later...")
 
     @main_loop.before_loop
