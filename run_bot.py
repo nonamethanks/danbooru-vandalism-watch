@@ -1,6 +1,8 @@
-from danbooru_vandalism_watch.bot import NNTBot
-from danboorutools import logger
 import os
+
+from danboorutools import logger
+
+from danbooru_vandalism_watch.bot import NNTBot
 
 log_path = logger.log_to_file(folder="logs")
 
