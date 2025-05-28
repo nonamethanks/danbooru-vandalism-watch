@@ -42,8 +42,7 @@ class PersistentView(discord.ui.View):
             interaction.user,  # type: ignore[arg-type]  # I FUCKING HATE MYPY I FUCKING HATE MYPY
             default_color=Color.green(),
         )
-        assert embed.title
-        embed.title = embed.title.removesuffix("(Handled)").strip() if is_revert else f"{embed.title} (Handled)"
+        self.fix_title(embed, suffix=" (Handled)", is_revert=is_revert)
 
         self.fix_buttons(button, original_label, undo_label)
         await interaction.response.edit_message(embed=embed, view=self)
@@ -70,11 +69,17 @@ class PersistentView(discord.ui.View):
             interaction.user,  # type: ignore[arg-type]  # I FUCKING HATE MYPY I FUCKING HATE MYPY
             default_color=Color.dark_grey(),
         )
-        assert embed.title
-        embed.title = embed.title.removesuffix("(Handled)").strip() if is_revert else f"{embed.title} (False Positive)"
+        self.fix_title(embed, suffix=" (False Positive)", is_revert=is_revert)
 
         self.fix_buttons(button, original_label, undo_label)
         await interaction.response.edit_message(embed=embed, view=self)
+
+    def fix_title(self, embed: discord.Embed, suffix: str, is_revert: bool) -> None:
+        assert embed.title
+        if is_revert:
+            embed.title = embed.title.removesuffix(suffix).removesuffix(suffix).strip()
+        else:
+            embed.title += suffix
 
     def edit_embed(
         self,
