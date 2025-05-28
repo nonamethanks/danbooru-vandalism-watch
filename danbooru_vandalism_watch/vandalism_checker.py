@@ -175,18 +175,21 @@ class VandalismChecker(commands.Cog):
         user = post_versions[0].updater
         self.bot.logger.info(f"<r>Sending vandalism for user #{user.url}</r>")
 
+        total_edit_url = f"https://danbooru.donmai.us/post_versions?search[updater_id]={user.id}"
+        timeframe_edits_url = "https://danbooru.donmai.us/post_versions?search[id]=" + ",".join(map(str, [p.id for p in post_versions]))
+
         if len(post_versions) < 100:
-            edits_url = "https://danbooru.donmai.us/post_versions?search[id]=" + ",".join(map(str, [p.id for p in post_versions]))
-            edits_link = f"[{len(post_versions)} posts]({edits_url})"
+            timeframe_edit_link = f"[{len(post_versions)} posts]({timeframe_edits_url})"
         else:
-            edits_link = f"[{len(post_versions)} posts](https://danbooru.donmai.us/post_versions?search[updater_id]={user.id})"
+            timeframe_edit_link = f"[{len(post_versions)} posts]({total_edit_url})"
 
         embed = Embed(
             title="Tag Vandalism",
             color=Color.red(),
         )
         embed.add_field(name="Type", value=vandalism_type, inline=True)
-        embed.add_field(name="Posts", value=edits_link, inline=True)
+        embed.add_field(name="Posts", value=timeframe_edit_link, inline=True)
+        embed.add_field(name="All Edits", value=f"[Link]({total_edit_url})", inline=True)
         embed.add_field(name="\u200b", value="\u200b")
         embed.add_field(name="Username", value=f"[{user.name}]({user.url})", inline=True)
         embed.add_field(name="ID", value=f"#{user.id}", inline=True)
