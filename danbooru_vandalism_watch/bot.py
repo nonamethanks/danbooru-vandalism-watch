@@ -74,7 +74,7 @@ class NNTBot(commands.Bot):
     def channel(self) -> discord.TextChannel:
         channel_id = self.test_channel_id if self.test_mode else self.channel_id
         channel = self.get_channel(channel_id)
-        assert isinstance(channel, discord.TextChannel)
+        assert isinstance(channel, discord.TextChannel), f"Couldn't find {channel_id}"
         return channel
 
     async def on_ready(self) -> None:

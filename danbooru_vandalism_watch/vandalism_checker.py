@@ -4,7 +4,7 @@ import datetime
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
-from danboorutools.exceptions import HTTPError, DanbooruHTTPError
+from danboorutools.exceptions import DanbooruHTTPError, HTTPError
 from danboorutools.logical.sessions.danbooru import danbooru_api, kwargs_to_include
 from danboorutools.models.danbooru import DanbooruUser  # noqa: TC002
 from danboorutools.util.misc import BaseModel
@@ -78,11 +78,11 @@ class VandalismChecker(commands.Cog):
             self.bot.logger.info("Scanning for artist vandalism...")
             await self.check_for_artist_vandalism()
             self.bot.logger.info("Done!")
+        except (HTTPError, DanbooruHTTPError):
+            self.bot.logger.exception("Encountered an exception with danbooru. Trying again later...")
         except Exception:
             self.bot.logger.exception("Encountered an exception. Sending to owner...")
             await self.bot.alert_owner()
-        except (HTTPError, DanbooruHTTPError):
-            self.bot.logger.exception("Encountered an exception with danbooru. Trying again later...")
 
     @main_loop.before_loop
     async def wait_for_boot(self) -> None:
@@ -137,6 +137,9 @@ class VandalismChecker(commands.Cog):
             self.last_checked_artist_version = artist_version.id
 
     def is_tag_vandalism(self, post_version: DanbooruPostVersion) -> str | None:
+        if self.bot.test_mode:
+            return "Mass Tag Removal"
+
         if post_version.post.is_deleted:
             self.bot.logger.trace("The post was deleted. Ignoring.")
             # no point in reporting these
@@ -146,12 +149,18 @@ class VandalismChecker(commands.Cog):
             # assume builders are not vandals (big assumption lmao)
             self.bot.logger.trace("Was done by a builder or above. Skipping.")
 
-        if len(post_version.removed_tags) >= 5 and len(post_version.post.tags) < 5:
+        tag_stats = (
+            f"The post had {len(removed_tags := post_version.removed_tags)} tags removed, "
+            f"{len(post_version.tags_after_edit)} tags in the end"
+        )
+
+        if (
+            (len(removed_tags) >= 5 and len(post_version.tags_after_edit) <= 5)
+            or (len(removed_tags) >= 10 and len(post_version.tags_after_edit) <= 10)
+            or len(removed_tags) >= 20
+        ):
             # most tags removed
-            self.bot.logger.trace(
-                f"Found mass tag removal. The post had {len(post_version.removed_tags)} tags removed,"
-                f" {len(post_version.post.tags)} tags in the end",
-            )
+            self.bot.logger.trace(f"Found mass tag removal. {tag_stats}")
             return "Mass Tag Removal"
 
         if len(post_version.added_tags) >= 200:
@@ -159,7 +168,7 @@ class VandalismChecker(commands.Cog):
             self.bot.logger.trace("Found mass tag addition.")
             return "Mass Tag Addition"
 
-        self.bot.logger.trace("No vandalism here.")
+        self.bot.logger.trace(f"No vandalism here. {tag_stats}")
         return None
 
     async def send_tag_vandalism(self, vandalism_type: str, post_versions: list[DanbooruPostVersion]) -> None:
