@@ -48,7 +48,7 @@ class ArtistVersionData(BaseModel):
     artist: ArtistData
 
     @property
-    def edits_url(self) -> str:
+    def url(self) -> str:
         return f"https://danbooru.donmai.us/artist_versions?search[artist_id]={self.artist.id}"
 
 
@@ -224,7 +224,7 @@ class VandalismChecker(commands.Cog):
             color=Color.red(),
         )
         embed.add_field(name="Type", value="Mass Url Removal", inline=True)
-        embed.add_field(name="Artist", value=f"[{artist_version.artist.name}]({artist_version.edits_url})", inline=True)
+        embed.add_field(name="Artist", value=f"[{artist_version.artist.name}]({artist_version.url})", inline=True)
         embed.add_field(name="\u200b", value="\u200b")
         embed.add_field(name="Username", value=f"[{user.name}]({user.url})", inline=True)
         embed.add_field(name="ID", value=f"#{user.id}", inline=True)
