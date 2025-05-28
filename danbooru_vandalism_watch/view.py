@@ -116,17 +116,20 @@ class PersistentView(discord.ui.View):
             if field["name"] == "\u200b":
                 continue
 
-            if is_revert:
-                field["name"] = field["name"].strip("~")
-                field["value"] = field["value"].strip("~")
-            else:
-                field["name"] = f"~~{field['name']}~~"
-                field["value"] = f"~~{field['value']}~~"
+            field["name"] = field["name"].strip("~")
+            field["value"] = field["value"].strip("~")
+
+            # if is_revert:
+            #     field["name"] = field["name"].strip("~")
+            #     field["value"] = field["value"].strip("~")
+            # else:
+            #     field["name"] = f"~~{field['name']}~~"
+            #     field["value"] = f"~~{field['value']}~~"
 
     def set_last_editors(self, embed_dict: Embed, last_editor: discord.Member) -> None:
         try:
-            editor_field = [f for f in embed_dict["fields"] if f["name"] == "Last handled by"][0]
-        except IndexError:
+            editor_field = next(f for f in embed_dict["fields"] if f["name"] == "Last handled by")
+        except StopIteration:
             editor_field = {"name": "Last handled by", "value": f"<@{last_editor.id}>", "inline": False}
             embed_dict["fields"].append(editor_field)
         else:
