@@ -177,11 +177,7 @@ class VandalismChecker(commands.Cog):
 
         total_edit_url = f"https://danbooru.donmai.us/post_versions?search[updater_id]={user.id}"
         timeframe_edits_url = "https://danbooru.donmai.us/post_versions?search[id]=" + ",".join(map(str, [p.id for p in post_versions]))
-
-        if len(post_versions) < 100:
-            timeframe_edit_link = f"[{len(post_versions)} posts]({timeframe_edits_url})"
-        else:
-            timeframe_edit_link = f"[{len(post_versions)} posts]({total_edit_url})"
+        timeframe_edit_link = f"[{len(post_versions)} posts]({timeframe_edits_url if len(post_versions) < 100 else total_edit_url})"
 
         embed = Embed(
             title="Tag Vandalism",
@@ -192,7 +188,7 @@ class VandalismChecker(commands.Cog):
         embed.add_field(name="All Edits", value=f"[Link]({total_edit_url})", inline=True)
         embed.add_field(name="\u200b", value="\u200b")
         embed.add_field(name="Username", value=f"[{user.name}]({user.url})", inline=True)
-        embed.add_field(name="ID", value=f"#{user.id}", inline=True)
+        embed.add_field(name="ID", value=f"{user.id}", inline=True)
         embed.add_field(name="Role", value=f"{user.level_string}", inline=True)
 
         timestamp = int(max(post_versions, key=lambda x: x.updated_at).updated_at.timestamp())
