@@ -1,3 +1,9 @@
 {
     "mypy.runUsingActiveInterpreter": true,
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.autopep8"
+    },
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "always"
+    },
 }
