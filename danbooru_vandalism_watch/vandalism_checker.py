@@ -184,6 +184,7 @@ class VandalismChecker(commands.Cog):
             color=Color.red(),
         )
         embed.add_field(name="Type", value=vandalism_type, inline=True)
+        embed.add_field(name="\u200b", value="\u200b")
         embed.add_field(name="Posts", value=timeframe_edit_link, inline=True)
         embed.add_field(name="All Edits", value=f"[Link]({total_edit_url})", inline=True)
         embed.add_field(name="\u200b", value="\u200b")
