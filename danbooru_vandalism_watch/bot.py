@@ -34,7 +34,7 @@ class NNTBot(commands.Bot):
             if owner := self._get_owner_from_team(int(owner_id)):
                 return owner
 
-            owner = self.get_user(int(owner_id))  # type: ignore[assignment] # shut up retard
+            owner = self.get_user(int(owner_id))
             assert owner is not None, f"Couldn't find owner user with id {owner_id}"
             return owner
 
