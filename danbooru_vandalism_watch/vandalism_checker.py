@@ -148,6 +148,7 @@ class VandalismChecker(commands.Cog):
         if post_version.updater.level > 30:
             # assume builders are not vandals (big assumption lmao)
             self.bot.logger.trace("Was done by a builder or above. Skipping.")
+            return None
 
         tag_stats = (
             f"The post had {len(removed_tags := post_version.removed_tags)} tags removed, "
